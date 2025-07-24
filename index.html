@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auftragsmanager Pro</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <h1>Auftragsmanager Pro</h1>
+            <div class="user-info">
+                <span id="user-name">Benutzer</span>
+                <span id="user-role" class="role-badge">Agent</span>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav" id="main-nav">
+            <div class="nav-grid">
+                <button class="nav-btn" onclick="showPage('new-order')">
+                    <span class="icon">📝</span>
+                    <span>Neuer Auftrag</span>
+                </button>
+                <button class="nav-btn" onclick="showPage('search-orders')">
+                    <span class="icon">🔍</span>
+                    <span>Aufträge durchsuchen</span>
+                </button>
+                <button class="nav-btn" onclick="showPage('my-orders')">
+                    <span class="icon">📋</span>
+                    <span>Meine Aufträge</span>
+                </button>
+                <button class="nav-btn" onclick="showPage('report-revenue')">
+                    <span class="icon">💰</span>
+                    <span>Umsatz melden</span>
+                </button>
+                <button class="nav-btn" onclick="showPage('report-waiting')">
+                    <span class="icon">⏱️</span>
+                    <span>Wartezeit melden</span>
+                </button>
+                <button class="nav-btn admin-only" onclick="showPage('daily-report')">
+                    <span class="icon">📊</span>
+                    <span>Tagesreport</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Pages -->
+        <main class="main-content">
+            <!-- Startseite -->
+            <div id="home-page" class="page active">
+                <div class="welcome-card">
+                    <h2>Willkommen beim Auftragsmanager Pro</h2>
+                    <p>Wählen Sie eine Aktion aus dem Menü oben.</p>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-number" id="open-orders">0</span>
+                            <span class="stat-label">Offene Aufträge</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-number" id="today-revenue">0€</span>
+                            <span class="stat-label">Heutiger Umsatz</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Neuer Auftrag -->
+            <div id="new-order-page" class="page">
+                <div class="page-header">
+                    <button class="back-btn" onclick="showPage('home')">← Zurück</button>
+                    <h2>Neuer Auftrag</h2>
+                </div>
+                
+                <form id="new-order-form" class="form-container">
+                    <div class="form-group">
+                        <label for="customer-name">Kundenname *</label>
+                        <input type="text" id="customer-name" name="customerName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer-address">Adresse *</label>
+                        <textarea id="customer-address" name="customerAddress" required rows="3"></textarea>
+                        <div class="validation-feedback" id="address-validation"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customer-phone">Telefonnummer *</label>
+                        <input type="tel" id="customer-phone" name="customerPhone" required>
+                        <div class="validation-feedback" id="phone-validation"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Beschreibung *</label>
+                        <textarea id="description" name="description" required rows="4" placeholder="Detaillierte Beschreibung des Auftrags..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="industry">Branche *</label>
+                        <select id="industry" name="industry" required>
+                            <option value="">Bitte wählen...</option>
+                            <option value="rohrreinigung">Rohrreinigung</option>
+                            <option value="schluesseldienst">Schlüsseldienst</option>
+                            <option value="schaedlingsbekaempfung">Schädlingsbekämpfung</option>
+                            <option value="sanitaer">Sanitär</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="priority">Priorität *</label>
+                        <select id="priority" name="priority" required>
+                            <option value="">Bitte wählen...</option>
+                            <option value="dringend">Dringend</option>
+                            <option value="normal">Normal</option>
+                            <option value="niedrig">Niedrig</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="estimated-revenue">Geschätzter Umsatz (€)</label>
+                        <input type="number" id="estimated-revenue" name="estimatedRevenue" min="0" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="country">Land *</label>
+                        <select id="country" name="country" required>
+                            <option value="">Bitte wählen...</option>
+                            <option value="AT">Österreich</option>
+                            <option value="CH">Schweiz</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">Zurücksetzen</button>
+                        <button type="submit" class="btn btn-primary">Auftrag erstellen</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Aufträge durchsuchen -->
+            <div id="search-orders-page" class="page">
+                <div class="page-header">
+                    <button class="back-btn" onclick="showPage('home')">← Zurück</button>
+                    <h2>Aufträge durchsuchen</h2>
+                </div>
+                
+                <div class="search-container">
+                    <div class="search-filters">
+                        <input type="text" id="search-input" placeholder="Suche nach Kunde, Telefon, Auftragsnummer...">
+                        <select id="status-filter">
+                            <option value="">Alle Status</option>
+                            <option value="offen">Offen</option>
+                            <option value="in-bearbeitung">In Bearbeitung</option>
+                            <option value="abgeschlossen">Abgeschlossen</option>
+                            <option value="storniert">Storniert</option>
+                        </select>
+                        <select id="industry-filter">
+                            <option value="">Alle Branchen</option>
+                            <option value="rohrreinigung">Rohrreinigung</option>
+                            <option value="schluesseldienst">Schlüsseldienst</option>
+                            <option value="schaedlingsbekaempfung">Schädlingsbekämpfung</option>
+                            <option value="sanitaer">Sanitär</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="searchOrders()">Suchen</button>
+                    </div>
+                    <div id="search-results" class="orders-list"></div>
+                </div>
+            </div>
+
+            <!-- Meine Aufträge -->
+            <div id="my-orders-page" class="page">
+                <div class="page-header">
+                    <button class="back-btn" onclick="showPage('home')">← Zurück</button>
+                    <h2>Meine Aufträge</h2>
+                </div>
+                <div id="my-orders-list" class="orders-list"></div>
+            </div>
+
+            <!-- Umsatz melden -->
+            <div id="report-revenue-page" class="page">
+                <div class="page-header">
+                    <button class="back-btn" onclick="showPage('home')">← Zurück</button>
+                    <h2>Umsatz melden</h2>
+                </div>
+                
+                <form id="revenue-form" class="form-container">
+                    <div class="form-group">
+                        <label for="order-select">Auftrag auswählen *</label>
+                        <select id="order-select" name="orderId" required>
+                            <option value="">Bitte wählen...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="revenue-amount">Umsatz (€) *</label>
+                        <input type="number" id="revenue-amount" name="amount" required min="0" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="payment-method">Zahlungsart *</label>
+                        <select id="payment-method" name="paymentMethod" required>
+                            <option value="">Bitte wählen...</option>
+                            <option value="bar">Bar</option>
+                            <option value="ueberweisung">Überweisung</option>
+                            <option value="ec">EC-Karte</option>
+                            <option value="twint">Twint</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="revenue-notes">Notizen</label>
+                        <textarea id="revenue-notes" name="notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Umsatz melden</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Wartezeit melden -->
+            <div id="report-waiting-page" class="page">
+                <div class="page-header">
+                    <button class="back-btn" onclick="showPage('home')">← Zurück</button>
+                    <h2>Wartezeit melden</h2>
+                </div>
+                
+                <form id="waiting-form" class="form-container">
+                    <div class="form-group">
+                        <label for="waiting-order-select">Auftrag auswählen *</label>
+                        <select id="waiting-order-select" name="orderId" required>
+                            <option value="">Bitte wählen...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="waiting-time">Wartezeit (Minuten) *</label>
+                        <input type="number" id="waiting-time" name="waitingTime" required min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="waiting-reason">Grund für Wartezeit</label>
+                        <textarea id="waiting-reason" name="reason" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Wartezeit melden</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tagesreport (Admin only) -->
+            <div id="daily-report-page" class="page admin-only">
+                <div class="page-header">
+                    <button class="back-btn" onclick="showPage('home')">← Zurück</button>
+                    <h2>Tagesreport</h2>
+                </div>
+                
+                <div class="report-container">
+                    <div class="report-filters">
+                        <input type="date" id="report-date" value="">
+                        <button class="btn btn-primary" onclick="generateDailyReport()">Report generieren</button>
+                    </div>
+                    <div id="daily-report-content" class="report-content"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>Laden...</p>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

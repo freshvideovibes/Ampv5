@@ -1,0 +1,462 @@
+{
+  "name": "Auftragsmanager Pro - Webhook Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "neuer-auftrag",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.action}}",
+              "operation": "equal",
+              "value2": "new-order"
+            }
+          ]
+        }
+      },
+      "id": "switch-node",
+      "name": "Switch Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "documentId": "YOUR_GOOGLE_SHEETS_ID",
+        "sheetName": "Eingehende_Auftraege",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Auftragsnummer": "={{$json.data.orderNumber}}",
+            "Kundenname": "={{$json.data.customerName}}",
+            "Adresse": "={{$json.data.customerAddress}}",
+            "Telefon": "={{$json.data.customerPhone}}",
+            "Beschreibung": "={{$json.data.description}}",
+            "Branche": "={{$json.data.industry}}",
+            "Prioritaet": "={{$json.data.priority}}",
+            "Geschaetzter_Umsatz": "={{$json.data.estimatedRevenue}}",
+            "Land": "={{$json.data.country}}",
+            "Status": "={{$json.data.status}}",
+            "Erstellt_am": "={{$json.data.createdAt}}",
+            "Erstellt_von": "={{$json.data.createdByName}}",
+            "User_ID": "={{$json.data.createdBy}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "google-sheets-new-order",
+      "name": "Google Sheets - New Order",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.action}}",
+              "operation": "equal",
+              "value2": "report-revenue"
+            }
+          ]
+        }
+      },
+      "id": "switch-revenue",
+      "name": "Switch Revenue",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "documentId": "YOUR_GOOGLE_SHEETS_ID",
+        "sheetName": "Umsaetze",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Auftragsnummer": "={{$json.data.orderId}}",
+            "Umsatz": "={{$json.data.amount}}",
+            "Zahlungsart": "={{$json.data.paymentMethod}}",
+            "Notizen": "={{$json.data.notes}}",
+            "Gemeldet_von": "={{$json.data.reportedByName}}",
+            "Gemeldet_am": "={{$json.data.reportedAt}}",
+            "User_ID": "={{$json.data.reportedBy}}"
+          }
+        },
+        "options": {}
+      },
+      "id": "google-sheets-revenue",
+      "name": "Google Sheets - Revenue",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.action}}",
+              "operation": "equal",
+              "value2": "check-duplicate"
+            }
+          ]
+        }
+      },
+      "id": "switch-duplicate",
+      "name": "Switch Duplicate Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "documentId": "YOUR_GOOGLE_SHEETS_ID",
+        "sheetName": "Eingehende_Auftraege",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Telefon": "={{$json.phone}}"
+          }
+        },
+        "options": {
+          "usePathForKeyRow": true
+        }
+      },
+      "id": "google-sheets-check",
+      "name": "Google Sheets - Check Duplicate",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if phone number already exists\nconst phoneToCheck = $input.first().json.phone;\nconst existingRecords = $input.all();\n\nconst exists = existingRecords.some(record => \n  record.json.Telefon === phoneToCheck\n);\n\nreturn {\n  exists: exists,\n  phone: phoneToCheck,\n  count: existingRecords.length\n};"
+      },
+      "id": "code-duplicate-check",
+      "name": "Code - Duplicate Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"orderNumber\": \"{{$json.data.orderNumber}}\", \"message\": \"Auftrag erfolgreich erstellt\"}"
+      },
+      "id": "response-success",
+      "name": "Response - Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"message\": \"Umsatz erfolgreich gemeldet\"}"
+      },
+      "id": "response-revenue",
+      "name": "Response - Revenue Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "response-duplicate",
+      "name": "Response - Duplicate Check",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.action}}",
+              "operation": "equal",
+              "value2": "get-stats"
+            }
+          ]
+        }
+      },
+      "id": "switch-stats",
+      "name": "Switch Stats",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [460, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate dashboard statistics\nconst today = new Date().toISOString().split('T')[0];\n\n// Mock data - replace with actual Google Sheets queries\nconst stats = {\n  openOrders: 12,\n  todayRevenue: 2450.50,\n  totalOrders: 156,\n  completedToday: 8\n};\n\nreturn stats;"
+      },
+      "id": "code-stats",
+      "name": "Code - Generate Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 700]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "response-stats",
+      "name": "Response - Stats",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 700]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.action}}",
+              "operation": "equal",
+              "value2": "search-orders"
+            }
+          ]
+        }
+      },
+      "id": "switch-search",
+      "name": "Switch Search",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [460, 900]
+    },
+    {
+      "parameters": {
+        "documentId": "YOUR_GOOGLE_SHEETS_ID",
+        "sheetName": "Auftraege_AT",
+        "options": {
+          "usePathForKeyRow": true
+        }
+      },
+      "id": "google-sheets-search",
+      "name": "Google Sheets - Search Orders",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [680, 900]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter and search orders based on query parameters\nconst query = $input.first().json.query || '';\nconst status = $input.first().json.status || '';\nconst industry = $input.first().json.industry || '';\nconst userRole = $input.first().json.role || 'agent';\nconst userId = $input.first().json.user?.id;\n\n// Get all orders from Google Sheets\nconst allOrders = $input.all().slice(1); // Remove the first item which contains the query\n\n// Filter orders based on criteria\nlet filteredOrders = allOrders.filter(order => {\n  const orderData = order.json;\n  \n  // Text search\n  if (query) {\n    const searchText = query.toLowerCase();\n    const searchableText = (\n      orderData.Kundenname + ' ' +\n      orderData.Telefon + ' ' +\n      orderData.Auftragsnummer + ' ' +\n      orderData.Beschreibung\n    ).toLowerCase();\n    \n    if (!searchableText.includes(searchText)) {\n      return false;\n    }\n  }\n  \n  // Status filter\n  if (status && orderData.Status !== status) {\n    return false;\n  }\n  \n  // Industry filter\n  if (industry && orderData.Branche !== industry) {\n    return false;\n  }\n  \n  // Role-based filtering\n  if (userRole === 'monteur') {\n    // Monteurs only see their assigned orders\n    return orderData.Zugewiesen_an === userId;\n  }\n  \n  return true;\n});\n\n// Convert to expected format\nconst formattedOrders = filteredOrders.map(order => ({\n  orderNumber: order.json.Auftragsnummer,\n  customerName: order.json.Kundenname,\n  customerPhone: order.json.Telefon,\n  customerAddress: order.json.Adresse,\n  description: order.json.Beschreibung,\n  industry: order.json.Branche,\n  priority: order.json.Prioritaet,\n  status: order.json.Status,\n  createdAt: order.json.Erstellt_am,\n  estimatedRevenue: order.json.Geschaetzter_Umsatz\n}));\n\nreturn formattedOrders;"
+      },
+      "id": "code-search",
+      "name": "Code - Filter Orders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 900]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "response-search",
+      "name": "Response - Search Results",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 900]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Action": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - New Order",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Revenue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Duplicate Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Stats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - New Order": {
+      "main": [
+        [
+          {
+            "node": "Response - Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Revenue": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Revenue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Revenue": {
+      "main": [
+        [
+          {
+            "node": "Response - Revenue Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Duplicate Check": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Check Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Check Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Code - Duplicate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Duplicate Check": {
+      "main": [
+        [
+          {
+            "node": "Response - Duplicate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Stats": {
+      "main": [
+        [
+          {
+            "node": "Code - Generate Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Generate Stats": {
+      "main": [
+        [
+          {
+            "node": "Response - Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Search": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Search Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Search Orders": {
+      "main": [
+        [
+          {
+            "node": "Code - Filter Orders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Filter Orders": {
+      "main": [
+        [
+          {
+            "node": "Response - Search Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
