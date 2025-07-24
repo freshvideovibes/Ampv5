@@ -1,7 +1,7 @@
 // Telegram Web App initialization
 let tg = window.Telegram?.WebApp;
 let user = null;
-let userRole = 'agent'; // Default role
+let userRole = 'admin'; // Default role
 
 // Configuration
 const CONFIG = {
